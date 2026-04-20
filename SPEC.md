@@ -4,35 +4,37 @@
 
 **Project**: api-ocr  
 **Type**: REST API Service  
-**Stack**: FastAPI + UV + Scalar + PaddleOCR PP-OCRv5 Server + Docker Compose  
+**Stack**: FastAPI + UV + EasyOCR + Docker Compose  
 **Target**: CPU-only server (i7 10th gen, 16GB RAM)  
-**Constraint**: ~600MB RAM para OCR, sin GPU  
+**Constraint**: ~500MB RAM para OCR, sin GPU  
 
 ## 2. Objetivos
 
 - API que recibe archivos (imágenes JPG/PNG o PDFs de 1 hoja)
 - Detecta si el PDF tiene texto digital o necesita OCR
 - Devuelve el texto extraído con metadata (confidence, idioma)
-- Documentación interactiva con Scalar (OpenAPI UI)
+- Documentación interactiva con Swagger UI (FastAPI built-in)
 - Dockerizado con Docker Compose
 
 ## 3. Modelo OCR
 
-**Elegido**: PaddleOCR PP-OCRv5 Server (configuración mixta)
+**Elegido**: EasyOCR
 
-| Componente | Modelo | Disco | RAM |
-|------------|--------|-------|-----|
-| Detection | PP-OCRv5_mobile_det | 4.7 MB | ~60MB |
-| Recognition | PP-OCRv5_server_rec | 81 MB | ~400MB |
-| **Total** | | **~86 MB** | **~500-600MB** |
+| Característica | Valor |
+|----------------|-------|
+| RAM | ~500MB |
+| Speed | 3-8s por página |
+| Accuracy | 88-92% |
+| Idiomas | Español (es), Inglés (en) |
+| Disco (modelos) | ~1.5GB |
 
-**Accuracy**: ~86% en reconocimiento de texto (PP-OCRv5 Server vs 81% de Mobile)
-
-**Por qué no modelos más potentes**:
-- GLM-OCR (94% accuracy): Requiere GPU con ~2GB VRAM
-- PaddleOCR-VL-1.5 (94.5%): Requiere GPU
-- DeepSeek-OCR: 3B params, requiere +6GB VRAM
-- Budget: Sin GPU, solo CPU
+**Por qué EasyOCR**:
+- ✅ Funciona en CPU sin problemas
+- ✅ Accuracy alta para documentos limpios
+- ✅ Fácil de instalar y mantener
+- ✅ Mejor que Tesseract para layouts complejos
+- ❌ Más lento que Tesseract (3-8s vs 0.5-2s)
+- ❌ Más RAM que Tesseract (~500MB vs ~200MB)
 
 ## 4. Arquitectura
 
