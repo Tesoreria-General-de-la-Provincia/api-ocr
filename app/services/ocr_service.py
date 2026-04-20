@@ -28,7 +28,7 @@ class OCRService:
             import easyocr
 
             self._reader = easyocr.Reader(
-                lang_list=[settings.ocr_lang, "en"],
+                lang_list=[settings.ocr_lang],
                 gpu=False,
                 verbose=False,
             )
@@ -78,12 +78,25 @@ class OCRService:
 
         return Image.open(io.BytesIO(img_bytes))
 
+    def _resize_image(self, image: Image.Image) -> Image.Image:
+        """Redimensiona la imagen si supera el máximo configurado."""
+        max_dim = settings.ocr_max_dimension
+        w, h = image.size
+        if max(w, h) <= max_dim:
+            return image
+        ratio = max_dim / max(w, h)
+        new_size = (int(w * ratio), int(h * ratio))
+        logger.info(f"Redimensionando imagen: {w}x{h} -> {new_size[0]}x{new_size[1]}")
+        return image.resize(new_size, Image.LANCZOS)
+
     def process_image(self, image: Image.Image) -> tuple[str, float, str]:
         """Procesa una imagen con OCR.
 
         Returns:
             tuple: (texto, confianza, idioma)
         """
+        image = self._resize_image(image)
+
         # Convertir PIL Image a numpy array
         img_array = np.array(image)
 
@@ -95,7 +108,7 @@ class OCRService:
 
         # OCR
         logger.info("Ejecutando OCR...")
-        results = self.reader.readtext(img_array)
+        results = self.reader.readtext(img_array, canvas_size=settings.ocr_max_dimension)
 
         # Extraer texto y confianza
         text_parts = []

@@ -13,6 +13,7 @@ class Settings(BaseSettings):
 
     # OCR (EasyOCR)
     ocr_lang: str = "es"
+    ocr_max_dimension: int = 1024  # max px para resize antes de OCR
 
     # Límites
     max_file_size: int = 10 * 1024 * 1024  # 10MB

@@ -23,9 +23,14 @@ logger = logging.getLogger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Lifecycle de la aplicación."""
+    from app.services.ocr_service import ocr_service
+
     logger.info("Iniciando API OCR...")
     logger.info(f"Versión: {settings.app_version}")
     logger.info(f"Idioma OCR: {settings.ocr_lang}")
+    logger.info("Precargando modelo OCR...")
+    _ = ocr_service.reader  # Forzar carga del modelo al startup
+    logger.info("Modelo OCR listo")
     yield
     logger.info("Apagando API OCR...")
 
@@ -74,9 +79,11 @@ async def health():
 
     Verifica que la API y el modelo OCR estén funcionando.
     """
+    from app.services.ocr_service import ocr_service
+
     return HealthResponse(
         status="healthy",
-        ocr_model_loaded=True,
+        ocr_model_loaded=ocr_service._reader is not None,
         version=settings.app_version,
     )
 
