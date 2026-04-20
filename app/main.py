@@ -32,7 +32,7 @@ async def lifespan(app: FastAPI):
 # Crear app
 app = FastAPI(
     title="API OCR",
-    description="API para extracción de texto de imágenes y PDFs usando PaddleOCR",
+    description="API para extracción de texto de imágenes y PDFs usando EasyOCR",
     version=settings.app_version,
     lifespan=lifespan,
     docs_url="/docs",

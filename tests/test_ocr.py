@@ -13,28 +13,6 @@ from app.services.ocr_service import OCRService
 class TestOCRService:
     """Tests para el servicio OCR."""
 
-    def test_calculate_confidence_with_results(self):
-        """Test cálculo de confianza con resultados."""
-        service = OCRService()
-
-        # Simular resultado de OCR
-        mock_result = [
-            [
-                [[[0, 0], [100, 0], [100, 20], [0, 20]], ("Hola", 0.95)],
-                [[[0, 30], [100, 30], [100, 50], [0, 50]], ("Mundo", 0.87)],
-            ]
-        ]
-
-        confidence = service._calculate_confidence(mock_result)
-        assert confidence == pytest.approx(0.91, rel=0.01)
-
-    def test_calculate_confidence_empty(self):
-        """Test cálculo de confianza vacío."""
-        service = OCRService()
-
-        assert service._calculate_confidence([]) == 0.0
-        assert service._calculate_confidence(None) == 0.0
-
     def test_detect_language(self):
         """Test detección de idioma."""
         service = OCRService()
@@ -50,7 +28,7 @@ class TestOCRService:
 
         doc = fitz.open()
         page = doc.new_page()
-        page.set_text("Este es un texto de prueba")
+        page.insert_text((72, 72), "Este es un texto de prueba")
 
         pdf_bytes = doc.tobytes()
         doc.close()
@@ -67,7 +45,7 @@ class TestOCRService:
 
         doc = fitz.open()
         page = doc.new_page()
-        page.set_text("Este es un texto de prueba con suficientes caracteres")
+        page.insert_text((72, 72), "Este es un texto de prueba con suficientes caracteres")
 
         pdf_bytes = doc.tobytes()
         doc.close()

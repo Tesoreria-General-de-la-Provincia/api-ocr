@@ -148,14 +148,10 @@ dependencies = [
     "fastapi>=0.115.0",
     "uvicorn[standard]>=0.30.0",
     "python-multipart>=0.0.9",
-    "paddlepaddle>=3.0.0",
-    "paddleocr>=3.0.0",
+    "easyocr>=1.7.0",
     "pymupdf>=1.25.0",
     "pydantic>=2.0.0",
     "pydantic-settings>=2.0.0",
-    # Dev
-    "pytest>=8.0.0",
-    "pytest-asyncio>=0.23.0",
 ]
 ```
 
@@ -187,18 +183,21 @@ FROM python:3.12-slim
 
 WORKDIR /app
 
-# Instalar dependencias del sistema para PaddleOCR
+# Dependencias del sistema para EasyOCR y PyMuPDF
 RUN apt-get update && apt-get install -y \
-    libgl1-mesa-glx \
+    libgl1 \
     libglib2.0-0 \
+    libgomp1 \
     && rm -rf /var/lib/apt/lists/*
 
-# Copiar archivos
-COPY app/ ./app/
-
 # Instalar UV y dependencias
+COPY app/pyproject.toml ./pyproject.toml
 RUN pip install uv
-RUN uv pip install --system -r app/requirements.txt
+RUN uv pip install --system --index-url https://pypi.org/simple/ \
+    fastapi>=0.115.0 uvicorn[standard]>=0.30.0 python-multipart>=0.0.9 \
+    easyocr>=1.7.0 pymupdf>=1.25.0 pydantic>=2.0.0 pydantic-settings>=2.0.0
+
+COPY app/ ./app/
 
 EXPOSE 8000
 
@@ -229,7 +228,7 @@ services:
 - [ ] Estructura del proyecto (`app/`, `tests/`, `docker/`)
 - [ ] Docker configuration (`Dockerfile`, `docker-compose.yml`)
 - [ ] FastAPI app con Scalar UI (`main.py`)
-- [ ] OCR service con PaddleOCR (`services/ocr_service.py`)
+- [ ] OCR service con EasyOCR (`services/ocr_service.py`)
 - [ ] Endpoint POST /ocr (`api/routes/ocr.py`)
 - [ ] Endpoint GET /health
 - [ ] Pydantic schemas (`schemas/ocr.py`)
@@ -238,8 +237,8 @@ services:
 
 ## 12. Troubleshooting
 
-**PaddleOCR tarda en iniciar**: Es normal, descarga modelos la primera vez (~100MB).
+**EasyOCR tarda en iniciar**: Es normal, descarga modelos la primera vez (~1.5GB).
 
-**Out of Memory**: Reducir a PP-OCRv5 mobile_rec si es necesario.
+**Out of Memory**: Verificar que el contenedor tenga al menos 2GB de RAM asignados.
 
 **PDF no se procesa**: Verificar que sea PDF de 1 página, PDFs multipágina no soportados.
