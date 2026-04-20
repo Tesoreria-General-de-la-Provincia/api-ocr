@@ -99,7 +99,7 @@ Redirige a `/scalar` (documentacion interactiva).
 
 ## Estructura
 
-```
+```bash
 api-ocr/
 ├── app/
 │   ├── main.py              # FastAPI app + Scalar UI
