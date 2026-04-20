@@ -1,12 +1,12 @@
-"""Servicio de OCR con PaddleOCR."""
+"""Servicio de OCR con EasyOCR."""
 
 import io
 import logging
 from typing import Literal
 
 import fitz  # PyMuPDF
+import numpy as np
 from PIL import Image
-from paddleocr import PaddleOCR
 
 from app.core.config import settings
 
@@ -14,27 +14,26 @@ logger = logging.getLogger(__name__)
 
 
 class OCRService:
-    """Servicio de OCR usando PaddleOCR."""
+    """Servicio de OCR usando EasyOCR."""
 
     def __init__(self):
         """Inicializa el servicio OCR."""
-        self._ocr: PaddleOCR | None = None
+        self._reader = None
 
     @property
-    def ocr(self) -> PaddleOCR:
+    def reader(self):
         """Lazy loading del modelo OCR."""
-        if self._ocr is None:
-            logger.info("Inicializando modelo PaddleOCR...")
-            self._ocr = PaddleOCR(
-                lang=settings.ocr_lang,
-                use_angle_cls=settings.ocr_use_angle_cls,
-                use_textline_orientation=settings.ocr_use_textline_orientation,
-                use_doc_orientation_classify=settings.ocr_use_doc_orientation_classify,
-                use_doc_unwarping=settings.ocr_use_doc_unwarping,
-                show_log=False,
+        if self._reader is None:
+            logger.info("Inicializando modelo EasyOCR...")
+            import easyocr
+
+            self._reader = easyocr.Reader(
+                lang_list=[settings.ocr_lang, "en"],
+                gpu=False,
+                verbose=False,
             )
-            logger.info("Modelo PaddleOCR inicializado")
-        return self._ocr
+            logger.info("Modelo EasyOCR inicializado")
+        return self._reader
 
     def extract_pdf_text(self, pdf_bytes: bytes) -> tuple[str, int]:
         """Extrae texto digital de un PDF.
@@ -79,56 +78,38 @@ class OCRService:
 
         return Image.open(io.BytesIO(img_bytes))
 
-    def _calculate_confidence(self, ocr_result) -> float:
-        """Calcula la confianza promedio del OCR."""
-        if not ocr_result or not ocr_result[0]:
-            return 0.0
-
-        confidences = []
-        for line in ocr_result[0]:
-            if len(line) >= 2 and isinstance(line[1], (int, float)):
-                confidences.append(float(line[1]))
-
-        if not confidences:
-            return 0.0
-
-        return sum(confidences) / len(confidences)
-
-    def _detect_language(self, text: str) -> str:
-        """Detecta el idioma del texto (básico).
-
-        Returns:
-            str: código ISO del idioma o 'unknown'
-        """
-        # PaddleOCR ya procesó con el lang configurado, asumimos ese
-        # En producción se podría usar langdetect para verificar
-        return settings.ocr_lang
-
     def process_image(self, image: Image.Image) -> tuple[str, float, str]:
         """Procesa una imagen con OCR.
 
         Returns:
             tuple: (texto, confianza, idioma)
         """
-        # Convertir PIL Image a bytes para PaddleOCR
-        img_bytes = io.BytesIO()
-        image.save(img_bytes, format="PNG")
-        img_bytes.seek(0)
+        # Convertir PIL Image a numpy array
+        img_array = np.array(image)
+
+        # EasyOCR espera RGB
+        if img_array.ndim == 2:
+            img_array = np.stack([img_array] * 3, axis=-1)
+        elif img_array.shape[2] == 4:
+            img_array = img_array[:, :, :3]
 
         # OCR
-        result = self.ocr.ocr(img_bytes.read(), cls=True)
+        logger.info("Ejecutando OCR...")
+        results = self.reader.readtext(img_array)
 
-        # Extraer texto
+        # Extraer texto y confianza
         text_parts = []
-        for line in result[0]:
-            if len(line) >= 2:
-                text_parts.append(line[1][0])
+        confidences = []
 
-        text = "\n".join(text_parts)
-        confidence = self._calculate_confidence(result)
-        language = self._detect_language(text)
+        for detection in results:
+            bbox, text, confidence = detection
+            text_parts.append(text)
+            confidences.append(confidence)
 
-        return text, confidence, language
+        full_text = " ".join(text_parts)
+        avg_confidence = sum(confidences) / len(confidences) if confidences else 0.0
+
+        return full_text, avg_confidence, settings.ocr_lang
 
     def process_file(
         self, file_bytes: bytes, file_type: Literal["image", "pdf"]
@@ -160,6 +141,14 @@ class OCRService:
             image = Image.open(io.BytesIO(file_bytes))
             text, confidence, language = self.process_image(image)
             return text, confidence, language, 1, "ocr"
+
+    def _detect_language(self, text: str) -> str:
+        """Detecta el idioma del texto (básico).
+
+        Returns:
+            str: código ISO del idioma o 'unknown'
+        """
+        return settings.ocr_lang
 
 
 # Instancia global del servicio (lazy loading)

@@ -2,12 +2,14 @@ FROM python:3.12-slim
 
 WORKDIR /app
 
-# Dependencias del sistema para PaddleOCR y PyMuPDF
+# Dependencias del sistema para EasyOCR y PyMuPDF
 RUN apt-get update && apt-get install -y \
     libgl1 \
     libglib2.0-0 \
     libgomp1 \
     libgthread-2.0-0 \
+    libgstreamer1.0-0 \
+    libgstreamer-plugins-base1.0-0 \
     && rm -rf /var/lib/apt/lists/*
 
 # Copiar solo pyproject.toml primero para caching
@@ -21,12 +23,10 @@ RUN uv pip install --system --index-url https://pypi.org/simple/ \
     fastapi>=0.115.0 \
     uvicorn[standard]>=0.30.0 \
     python-multipart>=0.0.9 \
-    paddlepaddle>=3.0.0 \
-    paddleocr>=3.0.0 \
+    easyocr>=1.7.0 \
     pymupdf>=1.25.0 \
     pydantic>=2.0.0 \
-    pydantic-settings>=2.0.0 \
-    scalar-fastapi>=1.0.0
+    pydantic-settings>=2.0.0
 
 # Copiar código de la app
 COPY app/ ./app/

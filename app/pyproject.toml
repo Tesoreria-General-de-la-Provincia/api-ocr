@@ -1,19 +1,17 @@
 [project]
 name = "api-ocr"
 version = "0.1.0"
-description = "API para extracción de texto de imágenes y PDFs usando PaddleOCR"
+description = "API para extracción de texto de imágenes y PDFs usando EasyOCR"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "fastapi>=0.115.0",
     "uvicorn[standard]>=0.30.0",
     "python-multipart>=0.0.9",
-    "paddlepaddle>=3.0.0",
-    "paddleocr>=3.0.0",
+    "easyocr>=1.7.0",
     "pymupdf>=1.25.0",
     "pydantic>=2.0.0",
     "pydantic-settings>=2.0.0",
-    "scalar-fastapi>=1.0.0",
 ]
 
 [project.optional-dependencies]
