@@ -1,5 +1,6 @@
 """Routes de OCR."""
 
+import asyncio
 import logging
 from pathlib import Path
 
@@ -17,6 +18,9 @@ from app.services.ocr_service import ocr_service
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/ocr", tags=["OCR"])
+
+# Limitar a 3 OCR en paralelo
+_ocr_semaphore = asyncio.Semaphore(3)
 
 # Tipos de archivos permitidos
 ALLOWED_IMAGE_TYPES = {"image/jpeg", "image/png", "image/jpg", "image/webp"}
@@ -96,11 +100,12 @@ async def process_ocr(file: UploadFile = File(...)):
             },
         )
 
-    # Procesar OCR
+    # Procesar OCR (max 3 en paralelo)
     try:
-        text, confidence, language, pages, source_type = ocr_service.process_file(
-            contents, file_type
-        )
+        async with _ocr_semaphore:
+            text, confidence, language, pages, source_type = await asyncio.to_thread(
+                ocr_service.process_file, contents, file_type
+            )
 
         logger.info(
             f"OCR completado: {len(text)} caracteres, confianza={confidence:.2f}, "
