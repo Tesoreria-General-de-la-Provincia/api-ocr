@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/ocr", tags=["OCR"])
 
 # Tipos de archivos permitidos
-ALLOWED_IMAGE_TYPES = {"image/jpeg", "image/png", "image/jpg"}
+ALLOWED_IMAGE_TYPES = {"image/jpeg", "image/png", "image/jpg", "image/webp"}
 ALLOWED_PDF_TYPES = {"application/pdf"}
 
 
@@ -35,7 +35,7 @@ def get_file_type(file: UploadFile) -> str | None:
     #También verificar por extensión
     filename = file.filename or ""
     ext = Path(filename).suffix.lower()
-    if ext in {".jpg", ".jpeg", ".png"}:
+    if ext in {".jpg", ".jpeg", ".png", ".webp"}:
         return "image"
     if ext == ".pdf":
         return "pdf"

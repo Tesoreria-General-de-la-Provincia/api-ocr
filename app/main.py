@@ -1,4 +1,4 @@
-"""Aplicación principal FastAPI con documentación Swagger UI."""
+"""Aplicación principal FastAPI con documentación Scalar."""
 
 import logging
 from contextlib import asynccontextmanager
@@ -6,6 +6,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
+from scalar_fastapi import get_scalar_api_reference
 
 from app.api.routes import ocr
 from app.core.config import settings
@@ -29,14 +30,14 @@ async def lifespan(app: FastAPI):
     logger.info("Apagando API OCR...")
 
 
-# Crear app
+# Crear app (sin docs de Swagger/ReDoc)
 app = FastAPI(
     title="API OCR",
     description="API para extracción de texto de imágenes y PDFs usando EasyOCR",
     version=settings.app_version,
     lifespan=lifespan,
-    docs_url="/docs",
-    redoc_url="/redoc",
+    docs_url=None,
+    redoc_url=None,
 )
 
 # CORS
@@ -52,10 +53,19 @@ app.add_middleware(
 app.include_router(ocr.router)
 
 
+@app.get("/scalar", include_in_schema=False)
+async def scalar_docs():
+    """Documentación interactiva con Scalar."""
+    return get_scalar_api_reference(
+        openapi_url=app.openapi_url,
+        title="API OCR",
+    )
+
+
 @app.get("/", include_in_schema=False)
 async def root():
-    """Redirect a documentación Swagger UI."""
-    return RedirectResponse(url="/docs", status_code=307)
+    """Redirect a documentación Scalar."""
+    return RedirectResponse(url="/scalar", status_code=307)
 
 
 @app.get("/health", response_model=HealthResponse, tags=["Health"])
@@ -66,7 +76,7 @@ async def health():
     """
     return HealthResponse(
         status="healthy",
-        ocr_model_loaded=True,  # El modelo se carga lazy, pero está disponible
+        ocr_model_loaded=True,
         version=settings.app_version,
     )
 

@@ -1,5 +1,7 @@
 FROM python:3.12-slim
 
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+
 WORKDIR /app
 
 # Dependencias del sistema para EasyOCR y PyMuPDF
@@ -7,36 +9,23 @@ RUN apt-get update && apt-get install -y \
     libgl1 \
     libglib2.0-0 \
     libgomp1 \
-    libgthread-2.0-0 \
-    libgstreamer1.0-0 \
-    libgstreamer-plugins-base1.0-0 \
     && rm -rf /var/lib/apt/lists/*
 
-# Copiar solo pyproject.toml primero para caching
-COPY app/pyproject.toml ./pyproject.toml
+# Copiar archivos de dependencias para cache de layers
+COPY pyproject.toml uv.lock ./
 
-# Instalar uv
-RUN pip install uv
+# Instalar solo dependencias (sin el proyecto, para cachear este layer)
+RUN uv sync --frozen --no-dev --no-install-project
 
-# Instalar dependencias Python
-RUN uv pip install --system --index-url https://pypi.org/simple/ \
-    fastapi>=0.115.0 \
-    uvicorn[standard]>=0.30.0 \
-    python-multipart>=0.0.9 \
-    easyocr>=1.7.0 \
-    pymupdf>=1.25.0 \
-    pydantic>=2.0.0 \
-    pydantic-settings>=2.0.0
-
-# Copiar código de la app
+# Copiar código de la app e instalar el proyecto
 COPY app/ ./app/
 
-# Variables de entorno
+RUN uv sync --frozen --no-dev
+
 ENV PYTHONUNBUFFERED=1
 ENV OCR_LANG=es
 ENV LOG_LEVEL=INFO
 
 EXPOSE 8000
 
-# Run
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD [".venv/bin/uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
